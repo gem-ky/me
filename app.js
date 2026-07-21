@@ -1,29 +1,14 @@
-const JIKAN_BASE = 'https://jikan.moe';
-let searchTimeout;
 let currentTab = 'main';
-
-function renderAnimeCards(animeList) {
-    const grid = document.getElementById('catalog-grid');
-    grid.innerHTML = '';
-
-    if (!animeList || animeList.length === 0) {
-        grid.innerHTML = `<div class="loading-shimmer">Ничего не найдено.</div>`;
-        return;
-    }
-const JIKAN_BASE = 'https://jikan.moe';
 let searchTimeout;
-let currentTab = 'main';
 
-// Функция для безопасного интервала между запросами (чтобы обойти лимиты API)
-const delay = ms => new Promise(res => setTimeout(res, ms));
-
+// Функция для безопасного рендеринга карточек на русском языке
 function renderAnimeCards(animeList) {
     const grid = document.getElementById('catalog-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
     if (!animeList || animeList.length === 0) {
-        grid.innerHTML = `<div class="loading-shimmer">Ничего не найдено или список пуст.</div>`;
+        grid.innerHTML = `<div class="loading-shimmer">Список пуст или ничего не найдено.</div>`;
         return;
     }
 
@@ -31,13 +16,11 @@ function renderAnimeCards(animeList) {
         const card = document.createElement('div');
         card.className = 'anime-card';
         
-        // Jikan использует mal_id вместо привычного ID
-        const id = anime.mal_id;
-        const score = anime.score || '0.0';
-        const posterUrl = anime.images && anime.images.jpg ? anime.images.jpg.image_url : '';
-        
-        // Используем английское название тайтла
-        const titleText = anime.title_english || anime.title || 'Anime Title';
+        // Получаем ID (поддерживаем разные варианты ID от Kinobox базы)
+        const id = anime.id || anime.shikimori_id || anime.kinopoisk_id;
+        const score = anime.rating_kinopoisk || anime.rating_imdb || '0.0';
+        const posterUrl = anime.poster_url || 'https://placeholder.com';
+        const titleText = anime.title || anime.title_ru || 'Аниме тайтл';
 
         card.innerHTML = `
             <div class="poster-wrapper">
@@ -49,7 +32,7 @@ function renderAnimeCards(animeList) {
             </div>
         `;
         
-        // Переход в наш готовый плеер без авторизаций
+        // Переход на страницу просмотра при клике на карточку
         card.addEventListener('click', () => {
             window.location.href = `watch.html?id=${id}`;
         });
@@ -58,37 +41,35 @@ function renderAnimeCards(animeList) {
     });
 }
 
-// Загрузка списков с защитой от частых запросов
+// Загрузка списков аниме напрямую через Kinobox API без CORS ошибок
 async function fetchAnimeCatalog() {
     if (currentTab === 'favorites') return;
     
     const grid = document.getElementById('catalog-grid');
-    if (grid) grid.innerHTML = `<div class="loading-shimmer">Синхронизация с сервером аниме...</div>`;
+    if (grid) grid.innerHTML = `<div class="loading-shimmer">Синхронизация с базой видео...</div>`;
 
     try {
-        let url = `${JIKAN_BASE}/top/anime?limit=24`;
-        
-        if (currentTab === 'trending') {
-            url = `${JIKAN_BASE}/top/anime?filter=airing&limit=24`; // Только выходящие онгоинги
-        }
+        let sortType = 'rating'; // Популярные (по рейтингу)
+        if (currentTab === 'trending') sortType = 'updated'; // Тренды (недавно обновленные серии)
 
-        await delay(300); // Искусственная микрозадержка для стабильности API
-        const response = await fetch(url);
+        const response = await fetch(`https://kinobox.tv{sortType}&limit=24`);
         if (!response.ok) throw new Error();
-        const resData = await response.json();
+        const animeList = await response.json();
         
-        renderAnimeCards(resData.data);
+        renderAnimeCards(animeList);
     } catch (error) {
         console.error(error);
-        if (grid) grid.innerHTML = `<div class="error">Сервер перегружен. Пожалуйста, подождите 5 секунд и обновите страницу.</div>`;
+        if (grid) grid.innerHTML = `<div class="error">Не удалось загрузить списки. Сервер временно недоступен.</div>`;
     }
 }
 
+// Загрузка локальных закладок
 function loadFavoritesTab() {
     const favorites = JSON.parse(localStorage.getItem('neon_favorites')) || [];
     renderAnimeCards(favorites);
 }
 
+// Поиск аниме на русском языке
 async function searchAnime(query) {
     const grid = document.getElementById('catalog-grid');
     const title = document.querySelector('.section-title');
@@ -104,144 +85,27 @@ async function searchAnime(query) {
     }
 
     if (title) title.innerText = `Результаты поиска: "${query}"`;
-    if (grid) grid.innerHTML = `<div class="loading-shimmer">Ищем в глобальной базе данных...</div>`;
+    if (grid) grid.innerHTML = `<div class="loading-shimmer">Ищем видео на сервере...</div>`;
 
     try {
-        await delay(200);
-        const response = await fetch(`${JIKAN_BASE}/anime?q=${encodeURIComponent(query.trim())}&limit=24`);
+        const response = await fetch(`https://kinobox.tv{encodeURIComponent(query.trim())}`);
         if (!response.ok) throw new Error();
-        const resData = await response.json();
-        renderAnimeCards(resData.data);
+        const data = await response.json();
+        
+        // Фильтруем результаты, оставляя только аниме
+        const animeResults = data.filter(item => item.type === 'anime' || (item.genres && item.genres.includes('аниме')));
+        renderAnimeCards(animeResults);
     } catch (error) {
-        if (grid) grid.innerHTML = `<div class="error">Ошибка поиска. Вводите название на английском (например: Naruto, One Piece).</div>`;
+        if (grid) grid.innerHTML = `<div class="error">Ошибка поиска. Попробуйте ввести точное название.</div>`;
     }
 }
 
+// Инициализация скрипта и обработка кликов меню
 document.addEventListener('DOMContentLoaded', () => {
+    // Дефолтная загрузка каталога
     fetchAnimeCatalog();
 
-    const searchInput = document.getElementById('anime-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => searchAnime(e.target.value), 700);
-        });
-    }
-
-    // Обработчик вкладок навигации
-    const tabs = {
-        'tab-main': { type: 'main', label: 'Популярное аниме' },
-        'tab-trending': { type: 'trending', label: 'В тренде сейчас' },
-        'tab-favorites': { type: 'favorites', label: 'Мой список избранного' }
-    };
-
-    Object.keys(tabs).forEach(tabId => {
-        const el = document.getElementById(tabId);
-        if (el) {
-            el.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
-                el.classList.add('active');
-                if (searchInput) searchInput.value = '';
-
-                currentTab = tabs[tabId].type;
-                const titleEl = document.querySelector('.section-title');
-                if (titleEl) titleEl.innerText = tabs[tabId].label;
-
-                if (currentTab === 'favorites') loadFavoritesTab();
-                else fetchAnimeCatalog();
-            });
-        }
-    });
-});
-
-    animeList.forEach(anime => {
-        const card = document.createElement('div');
-        card.className = 'anime-card';
-        
-        // Jikan API использует mal_id вместо id
-        const id = anime.mal_id;
-        const score = anime.score || '0.0';
-        const posterUrl = anime.images && anime.images.jpg ? anime.images.jpg.image_url : '';
-        // Берем английское название или японское, так как Jikan не отдает русский текст напрямую
-        const titleText = anime.title_english || anime.title || 'Без названия';
-
-        card.innerHTML = `
-            <div class="poster-wrapper">
-                <div class="anime-rating">★ ${score}</div>
-                <img src="${posterUrl}" alt="${titleText}" loading="lazy">
-            </div>
-            <div class="anime-info">
-                <div class="anime-title" title="${titleText}">${titleText}</div>
-            </div>
-        `;
-        
-        card.addEventListener('click', () => {
-            window.location.href = `watch.html?id=${id}`;
-        });
-
-        grid.appendChild(card);
-    });
-}
-
-// Загрузка каталога через стабильный Jikan API
-async function fetchAnimeCatalog() {
-    if (currentTab === 'favorites') return;
-    
-    const grid = document.getElementById('catalog-grid');
-    grid.innerHTML = `<div class="loading-shimmer">Загружаем список...</div>`;
-
-    try {
-        let url = `${JIKAN_BASE}/top/anime?limit=24`;
-        
-        // Меняем тип топа в зависимости от выбранной вкладки
-        if (currentTab === 'trending') {
-            url = `${JIKAN_BASE}/top/anime?filter=airing&limit=24`; // Онгоинги (в тренде)
-        }
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error();
-        const resData = await response.json();
-        renderAnimeCards(resData.data);
-    } catch (error) {
-        grid.innerHTML = `<div class="error">Ошибка загрузки каталога. Пожалуйста, обновите страницу через минуту (у API есть лимит запросов).</div>`;
-    }
-}
-
-function loadFavoritesTab() {
-    const favorites = JSON.parse(localStorage.getItem('neon_favorites')) || [];
-    renderAnimeCards(favorites);
-}
-
-async function searchAnime(query) {
-    const grid = document.getElementById('catalog-grid');
-    const title = document.querySelector('.section-title');
-    
-    if (!query.trim()) {
-        if (currentTab === 'favorites') { loadFavoritesTab(); }
-        else { 
-            title.innerText = currentTab === 'trending' ? 'В тренде сейчас' : 'Популярное аниме'; 
-            fetchAnimeCatalog(); 
-        }
-        return;
-    }
-
-    title.innerText = `Результаты поиска: "${query}"`;
-    grid.innerHTML = `<div class="loading-shimmer">Ищем аниме...</div>`;
-
-    try {
-        const response = await fetch(`${JIKAN_BASE}/anime?q=${encodeURIComponent(query.trim())}&limit=24`);
-        if (!response.ok) throw new Error();
-        const resData = await response.json();
-        renderAnimeCards(resData.data);
-    } catch (error) {
-        grid.innerHTML = `<div class="error">Не удалось выполнить поиск. Попробуйте ввести на английском.</div>`;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    fetchAnimeCatalog();
-
+    // Слушатель для инпута поиска
     const searchInput = document.getElementById('anime-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -250,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Логика переключения вкладок меню
+    // Привязка вкладок навигации
     const tabs = {
         'tab-main': { type: 'main', label: 'Популярное аниме' },
         'tab-trending': { type: 'trending', label: 'В тренде сейчас' },
@@ -262,13 +126,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
+
+                // Меняем активный класс у элементов меню
                 document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
                 el.classList.add('active');
+                
+                // Очищаем строку поиска при смене вкладки
                 if (searchInput) searchInput.value = '';
 
                 currentTab = tabs[tabId].type;
-                document.querySelector('.section-title').innerText = tabs[tabId].label;
+                const titleEl = document.querySelector('.section-title');
+                if (titleEl) titleEl.innerText = tabs[tabId].label;
 
+                // Загружаем нужный контент
                 if (currentTab === 'favorites') loadFavoritesTab();
                 else fetchAnimeCatalog();
             });
