@@ -245,3 +245,111 @@ body {
     .search-bar { width: 100%; }
     .top-header { flex-direction: column; gap: 15px; }
 }
+/* Стили для страницы просмотра watch.html */
+.watch-body {
+    background-color: var(--bg-main);
+    display: block;
+    padding: 40px 20px;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 25px;
+    transition: 0.3s;
+}
+
+.back-btn:hover {
+    text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.watch-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.player-section h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+.player-wrapper-neon {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* Пропорции экрана 16:9 */
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.1);
+    margin-bottom: 40px;
+}
+
+.player-wrapper-neon iframe, .player-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.player-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+/* Детализация */
+.anime-details-box {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+}
+
+.details-grid {
+    display: flex;
+    gap: 30px;
+}
+
+#anime-poster-watch {
+    width: 180px;
+    height: 260px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.details-info {
+    flex-grow: 1;
+}
+
+.anime-meta {
+    margin-bottom: 10px;
+    font-size: 15px;
+    color: var(--text-muted);
+}
+
+.anime-meta strong {
+    color: #fff;
+}
+
+.anime-description {
+    margin-top: 15px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    font-size: 15px;
+}
+
+@media (max-width: 768px) {
+    .details-grid {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+}
