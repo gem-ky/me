@@ -1,12 +1,11 @@
 const SHIKIMORI_API = 'https://shikimori.one';
 let searchTimeout;
 
-// Универсальная функция для отрисовки карточек аниме в сетку
 function renderAnimeCards(animeList) {
     const grid = document.getElementById('catalog-grid');
-    grid.innerHTML = ''; // Очищаем сетку от старых элементов или лоадера
+    grid.innerHTML = '';
 
-    if (animeList.length === 0) {
+    if (!animeList || animeList.length === 0) {
         grid.innerHTML = `<div class="loading-shimmer">Ничего не найдено. Попробуйте другой запрос.</div>`;
         return;
     }
@@ -28,7 +27,6 @@ function renderAnimeCards(animeList) {
             </div>
         `;
         
-        // Переход на страницу просмотра при клике
         card.addEventListener('click', () => {
             window.location.href = `watch.html?id=${anime.id}`;
         });
@@ -37,7 +35,6 @@ function renderAnimeCards(animeList) {
     });
 }
 
-// Загрузка трендов по умолчанию
 async function fetchAnimeCatalog() {
     try {
         const response = await fetch(`${SHIKIMORI_API}?limit=24&order=popularity`);
@@ -50,7 +47,6 @@ async function fetchAnimeCatalog() {
     }
 }
 
-// Поиск аниме по названию
 async function searchAnime(query) {
     const grid = document.getElementById('catalog-grid');
     const title = document.querySelector('.section-title');
@@ -65,18 +61,18 @@ async function searchAnime(query) {
     grid.innerHTML = `<div class="loading-shimmer">Ищем на серверах...</div>`;
 
     try {
-        // Запрос к API Шикимори с фильтром поиска (параметр search)
-        const response = await fetch(`${SHIKIMORI_API}?limit=24&search=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Ошибка поиска');
+        // Добавлен принудительный перевод в UTF-8 строку для серверов Shikimori
+        const url = `${SHIKIMORI_API}?limit=24&search=${encodeURIComponent(query.trim())}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Ошибка ответа сервера');
         const animeList = await response.json();
         renderAnimeCards(animeList);
     } catch (error) {
         console.error('Ошибка поиска:', error);
-        grid.innerHTML = `<div class="error">Ошибка при выполнении поиска.</div>`;
+        grid.innerHTML = `<div class="error">Ошибка сервера. Попробуйте ввести на английском (например, Naruto)</div>`;
     }
 }
 
-// Инициализация событий при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     fetchAnimeCatalog();
 
@@ -84,14 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             const value = e.target.value;
-            
-            // Сбрасываем старый таймер ожидания ввода
             clearTimeout(searchTimeout);
-            
-            // Запускаем поиск только если пользователь сделал паузу в 500мс
             searchTimeout = setTimeout(() => {
                 searchAnime(value);
-            }, 500);
+            }, 600); // Немного увеличили задержку, чтобы поберечь лимиты API
         });
     }
 });
