@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tunime — смотри аниме</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#15111a">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">tuni<span>me</span></div>
+  <nav class="nav-links">
+    <a href="index.html" class="active">Каталог</a>
+    <a href="list.html">Мой список</a>
+  </nav>
+  <div class="header-right">
+    <div class="search-box">
+      <input id="search-input" type="text" placeholder="Поиск тайтла...">
+    </div>
+    <div id="auth-slot"></div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-eyebrow">/// vol. 3.1 — каталог</div>
+  <h1>Тьма любит<br><em>хороший сюжет</em></h1>
+  <p>Каталог аниме с метаданными Shikimori, личным списком просмотра и офлайн-доступом через PWA.</p>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Каталог</h2>
+    <div class="filter-row">
+      <button data-order="popularity" class="active">популярность</button>
+      <button data-order="ranked">рейтинг</button>
+      <button data-order="aired_on">новизна</button>
+    </div>
+  </div>
+  <div class="grid" id="catalog-grid"></div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
