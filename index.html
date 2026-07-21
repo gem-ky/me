@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeonTime — Смотреть Аниме Онлайн</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Иконки Google Material Symbols -->
+    <link href="https://googleapis.com" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Боковая панель навигации -->
+    <nav class="sidebar">
+        <div class="logo">
+            <span class="material-symbols-rounded icon-logo">movie_filter</span>
+            <h2>Neon<span>Time</span></h2>
+        </div>
+        <ul class="nav-links">
+            <li class="active"><a href="index.html"><span class="material-symbols-rounded">home</span>Главная</a></li>
+            <li><a href="#trending"><span class="material-symbols-rounded">local_fire_department</span>В тренде</a></li>
+            <li><a href="#favorites"><span class="material-symbols-rounded">favorite</span>Мой список</a></li>
+            <li><a href="#settings"><span class="material-symbols-rounded">settings</span>Настройки</a></li>
+        </ul>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <!-- Шапка с поиском -->
+        <header class="top-header">
+            <div class="search-bar">
+                <span class="material-symbols-rounded">search</span>
+                <input type="text" id="anime-search" placeholder="Поиск аниме по названию...">
+            </div>
+            <div class="user-profile">
+                <span class="material-symbols-rounded">account_circle</span>
+                <span class="username">Войти через Shikimori</span>
+            </div>
+        </header>
+
+        <!-- Секция с контентом -->
+        <section class="catalog-section">
+            <h1 class="section-title">Популярное аниме</h1>
+            <!-- Сюда скрипт динамически добавит карточки -->
+            <div class="anime-grid" id="catalog-grid">
+                <div class="loading-shimmer">Загрузка каталога...</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
