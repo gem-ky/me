@@ -23,7 +23,7 @@ function renderAuthState() {
   const user = getUser();
   if (user) {
     slot.innerHTML = `
-      <span style="font-family:var(--font-mono);font-size:13px;color:var(--text-dim)">${user.username}</span>
+      <a href="user.html" style="font-family:var(--font-mono);font-size:13px;color:var(--text-dim)">${user.username}</a>
       <button class="btn" id="logout-btn">Выйти</button>
     `;
     document.getElementById('logout-btn').onclick = () => {
@@ -110,6 +110,13 @@ async function handleAuthSubmit(getMode) {
       errorBox.textContent = err.message;
       errorBox.style.display = 'block';
     }
+  });
+}
+
+// Регистрация PWA: делает возможной установку на телефон и офлайн-доступ к оболочке
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
 
