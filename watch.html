@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр Аниме — NeonTime</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://googleapis.com" rel="stylesheet">
+</head>
+<body class="watch-body">
+
+    <!-- Кнопка назад -->
+    <a href="index.html" class="back-btn">
+        <span class="material-symbols-rounded">arrow_back</span> На главную
+    </a>
+
+    <div class="watch-container">
+        <!-- Блок плеера -->
+        <div class="player-section">
+            <h1 id="anime-title-watch">Загрузка названия...</h1>
+            <div class="player-wrapper-neon">
+                <!-- Сюда JS встроит iframe с видео -->
+                <div id="player-placeholder" class="player-loading">Ищем доступные плееры...</div>
+            </div>
+        </div>
+
+        <!-- Детали аниме под плеером -->
+        <div class="anime-details-box">
+            <div class="details-grid">
+                <img id="anime-poster-watch" src="" alt="Постер">
+                <div class="details-info">
+                    <p class="anime-meta"><strong>Статус:</strong> <span id="anime-status">-</span></p>
+                    <p class="anime-meta"><strong>Эпизоды:</strong> <span id="anime-episodes">-</span></p>
+                    <p class="anime-meta"><strong>Рейтинг Шикимори:</strong> <span id="anime-rating-watch">-</span></p>
+                    <p class="anime-description" id="anime-desc">Загрузка описания тайтла...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="watch.js"></script>
+</body>
+</html>
