@@ -32,9 +32,9 @@ async function fetchAnimeCatalog() {
                 </div>
             `;
             
-            // Навешиваем клик на карточку (в следующем шаге привяжем сюда открытие плеера)
+                       // При клике перенаправляем на страницу просмотра с ID тайтла
             card.addEventListener('click', () => {
-                alert(`Вы выбрали: ${anime.russian || anime.name}\nВ следующем шаге мы подключим сюда плеер для просмотра!`);
+                window.location.href = `watch.html?id=${anime.id}`;
             });
 
             grid.appendChild(card);
