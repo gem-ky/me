@@ -1,7 +1,7 @@
 let currentTab = 'main';
 let searchTimeout;
 
-// Функция для безопасного рендеринга карточек на русском языке
+// Универсальная функция отрисовки карточек
 function renderAnimeCards(animeList) {
     const grid = document.getElementById('catalog-grid');
     if (!grid) return;
@@ -16,7 +16,7 @@ function renderAnimeCards(animeList) {
         const card = document.createElement('div');
         card.className = 'anime-card';
         
-        // Получаем ID (поддерживаем разные варианты ID от Kinobox базы)
+        // Получаем ID проекта и метаданные
         const id = anime.id || anime.shikimori_id || anime.kinopoisk_id;
         const score = anime.rating_kinopoisk || anime.rating_imdb || '0.0';
         const posterUrl = anime.poster_url || 'https://placeholder.com';
@@ -32,7 +32,7 @@ function renderAnimeCards(animeList) {
             </div>
         `;
         
-        // Переход на страницу просмотра при клике на карточку
+        // Переход на страницу просмотра при клике
         card.addEventListener('click', () => {
             window.location.href = `watch.html?id=${id}`;
         });
@@ -41,7 +41,7 @@ function renderAnimeCards(animeList) {
     });
 }
 
-// Загрузка списков аниме напрямую через Kinobox API без CORS ошибок
+// Загрузка каталога аниме напрямую из Kinobox
 async function fetchAnimeCatalog() {
     if (currentTab === 'favorites') return;
     
@@ -49,8 +49,8 @@ async function fetchAnimeCatalog() {
     if (grid) grid.innerHTML = `<div class="loading-shimmer">Синхронизация с базой видео...</div>`;
 
     try {
-        let sortType = 'rating'; // Популярные (по рейтингу)
-        if (currentTab === 'trending') sortType = 'updated'; // Тренды (недавно обновленные серии)
+        let sortType = 'rating'; 
+        if (currentTab === 'trending') sortType = 'updated'; 
 
         const response = await fetch(`https://kinobox.tv{sortType}&limit=24`);
         if (!response.ok) throw new Error();
@@ -63,13 +63,13 @@ async function fetchAnimeCatalog() {
     }
 }
 
-// Загрузка локальных закладок
+// Загрузка закладок пользователя из памяти браузера
 function loadFavoritesTab() {
     const favorites = JSON.parse(localStorage.getItem('neon_favorites')) || [];
     renderAnimeCards(favorites);
 }
 
-// Поиск аниме на русском языке
+// Поиск аниме 
 async function searchAnime(query) {
     const grid = document.getElementById('catalog-grid');
     const title = document.querySelector('.section-title');
@@ -92,7 +92,7 @@ async function searchAnime(query) {
         if (!response.ok) throw new Error();
         const data = await response.json();
         
-        // Фильтруем результаты, оставляя только аниме
+        // Оставляем только аниме
         const animeResults = data.filter(item => item.type === 'anime' || (item.genres && item.genres.includes('аниме')));
         renderAnimeCards(animeResults);
     } catch (error) {
@@ -100,12 +100,10 @@ async function searchAnime(query) {
     }
 }
 
-// Инициализация скрипта и обработка кликов меню
+// Инициализация событий при старте страницы
 document.addEventListener('DOMContentLoaded', () => {
-    // Дефолтная загрузка каталога
     fetchAnimeCatalog();
 
-    // Слушатель для инпута поиска
     const searchInput = document.getElementById('anime-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -114,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Привязка вкладок навигации
     const tabs = {
         'tab-main': { type: 'main', label: 'Популярное аниме' },
         'tab-trending': { type: 'trending', label: 'В тренде сейчас' },
@@ -128,18 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Меняем активный класс у элементов меню
                 document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
                 el.classList.add('active');
                 
-                // Очищаем строку поиска при смене вкладки
                 if (searchInput) searchInput.value = '';
 
                 currentTab = tabs[tabId].type;
                 const titleEl = document.querySelector('.section-title');
                 if (titleEl) titleEl.innerText = tabs[tabId].label;
 
-                // Загружаем нужный контент
                 if (currentTab === 'favorites') loadFavoritesTab();
                 else fetchAnimeCatalog();
             });
