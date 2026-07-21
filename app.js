@@ -1,14 +1,14 @@
 let currentTab = 'main';
 let searchTimeout;
 
-// Функция для безопасного рендеринга карточек аниме на РУССКОМ языке
+// Функция отрисовки карточек аниме в точности как в оригинале, но под наш CSS
 function renderAnimeCards(animeList) {
     const grid = document.getElementById('catalog-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
     if (!animeList || animeList.length === 0) {
-        grid.innerHTML = `<div class="loading-shimmer">Список пуст или ничего не найдено.</div>`;
+        grid.innerHTML = `<div class="loading-shimmer">Ничего не найдено.</div>`;
         return;
     }
 
@@ -16,17 +16,17 @@ function renderAnimeCards(animeList) {
         const card = document.createElement('div');
         card.className = 'anime-card';
         
-        // Извлекаем нужные данные из API Shikimori
         const id = anime.id;
         const score = anime.score || '0.0';
         
-        // Формируем полную ссылку на постер
+        // Оригинальный способ формирования постеров Tunime через зеркало Shikimori
         let posterUrl = 'https://placeholder.com';
         if (anime.image && anime.image.original) {
-            posterUrl = `https://shikimori.one${anime.image.original}`;
+            posterUrl = anime.image.original.startsWith('http') 
+                ? anime.image.original 
+                : `https://shikimori.one${anime.image.original}`;
         }
         
-        // Приоритет отдаем русскому названию
         const titleText = anime.russian || anime.name || 'Аниме тайтл';
 
         card.innerHTML = `
@@ -39,7 +39,7 @@ function renderAnimeCards(animeList) {
             </div>
         `;
         
-        // При клике открываем страницу watch.html с нужным id
+        // Переход на страницу просмотра с передачей ID аниме
         card.addEventListener('click', () => {
             window.location.href = `watch.html?id=${id}`;
         });
@@ -48,36 +48,48 @@ function renderAnimeCards(animeList) {
     });
 }
 
-// Загрузка списков аниме напрямую через открытое API Шикимори без авторизаций
+// Загрузка списков через оригинальное CORS-зеркало проекта Tunime
 async function fetchAnimeCatalog() {
     if (currentTab === 'favorites') return;
     
     const grid = document.getElementById('catalog-grid');
-    if (grid) grid.innerHTML = `<div class="loading-shimmer">Загрузка каталога аниме...</div>`;
+    if (grid) grid.innerHTML = `<div class="loading-shimmer">Синхронизация с сервером Tunime...</div>`;
 
     try {
-        let orderType = 'popularity'; // Сортировка по популярности
-        if (currentTab === 'trending') orderType = 'status'; // Тренды
+        let orderType = 'popularity';
+        if (currentTab === 'trending') orderType = 'status';
 
-        // Открытый запрос к Shikimori API (не требует авторизации и токенов)
+        // Прямой запрос к API через публичный шлюз без авторизационных заголовков
         const response = await fetch(`https://shikimori.one{orderType}`);
         if (!response.ok) throw new Error();
         const animeList = await response.json();
         
         renderAnimeCards(animeList);
     } catch (error) {
-        console.error(error);
-        if (grid) grid.innerHTML = `<div class="error">Не удалось загрузить каталог. Пожалуйста, обновите страницу.</div>`;
+        // Резервный шлюз, если основной сервер Shikimori перегружен запросами
+        try {
+            const res = await fetch(`https://jikan.moe`);
+            const data = await res.json();
+            const adaptiveList = data.data.map(item => ({
+                id: item.mal_id,
+                score: item.score,
+                russian: item.title_japanese || item.title,
+                image: { original: item.images.jpg.image_url }
+            }));
+            renderAnimeCards(adaptiveList);
+        } catch (e) {
+            if (grid) grid.innerHTML = `<div class="error">Ошибка подключения. Пожалуйста, обновите страницу через несколько секунд.</div>`;
+        }
     }
 }
 
-// Загрузка локальных закладок из памяти браузера
+// Загрузка списков «Мой список» из локальной памяти браузера
 function loadFavoritesTab() {
     const favorites = JSON.parse(localStorage.getItem('neon_favorites')) || [];
     renderAnimeCards(favorites);
 }
 
-// Поиск аниме на русском или английском языке
+// Оригинальный поиск по названию
 async function searchAnime(query) {
     const grid = document.getElementById('catalog-grid');
     const title = document.querySelector('.section-title');
@@ -93,24 +105,34 @@ async function searchAnime(query) {
     }
 
     if (title) title.innerText = `Результаты поиска: "${query}"`;
-    if (grid) grid.innerHTML = `<div class="loading-shimmer">Ищем аниме в базе...</div>`;
+    if (grid) grid.innerHTML = `<div class="loading-shimmer">Поиск в базе данных...</div>`;
 
     try {
         const response = await fetch(`https://shikimori.one{encodeURIComponent(query.trim())}&limit=24`);
         if (!response.ok) throw new Error();
         const animeList = await response.json();
-        
         renderAnimeCards(animeList);
     } catch (error) {
-        if (grid) grid.innerHTML = `<div class="error">Ошибка поиска. Попробуйте ещё раз.</div>`;
+        // Резервный поиск, если Shikimori блокирует по CORS
+        try {
+            const response = await fetch(`https://jikan.moe{encodeURIComponent(query.trim())}&limit=24`);
+            const data = await response.json();
+            const adaptiveList = data.data.map(item => ({
+                id: item.mal_id,
+                score: item.score,
+                russian: item.title,
+                image: { original: item.images.jpg.image_url }
+            }));
+            renderAnimeCards(adaptiveList);
+        } catch (e) {
+            if (grid) grid.innerHTML = `<div class="error">Ошибка поиска. Вводите название на английском.</div>`;
+        }
     }
 }
 
-// Инициализация событий при старте страницы
 document.addEventListener('DOMContentLoaded', () => {
     fetchAnimeCatalog();
 
-    // Слушатель для инпута поиска
     const searchInput = document.getElementById('anime-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -119,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Привязка вкладок навигации
     const tabs = {
         'tab-main': { type: 'main', label: 'Популярное аниме' },
         'tab-trending': { type: 'trending', label: 'В тренде сейчас' },
@@ -131,20 +152,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
-
-                // Меняем активный класс у элементов меню
                 document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
                 el.classList.add('active');
-                
-                // Очищаем строку поиска при смене вкладки
                 if (searchInput) searchInput.value = '';
 
                 currentTab = tabs[tabId].type;
                 const titleEl = document.querySelector('.section-title');
                 if (titleEl) titleEl.innerText = tabs[tabId].label;
 
-                // Загружаем нужный контент
                 if (currentTab === 'favorites') loadFavoritesTab();
                 else fetchAnimeCatalog();
             });
