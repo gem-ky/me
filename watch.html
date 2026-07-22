@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Просмотр — СЕАНС</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F0B14">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">СЕАНС<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="index.html" data-page="home">Главная</a>
+      <a href="search.html" data-page="search">Каталог</a>
+      <a href="profile.html" data-page="profile">Моё</a>
+      <a href="settings.html" data-page="settings">Настройки</a>
+    </div>
+    <div class="navsearch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="navSearchInput" type="text" placeholder="Найти аниме…">
+    </div>
+  </div>
+</nav>
+
+<main class="wrap" id="content" style="padding-bottom:60px;">
+  <div class="notice" style="margin-top:36px;">Загрузка…</div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+initNav('search');
+
+const id = qs('id');
+let ep = parseInt(qs('ep') || '1', 10);
+const content = document.getElementById('content');
+
+function setEpisodeParam(n){
+  const url = new URL(location.href);
+  url.searchParams.set('ep', n);
+  history.replaceState(null, '', url);
+}
+
+async function main(){
+  if(!id){ content.innerHTML = `<div class="notice">Тайтл не указан.</div>`; return; }
+
+  if(!Kodik.hasToken()){
+    content.innerHTML = `
+      <div class="notice" style="margin-top:36px;">
+        Чтобы смотреть, нужен личный API-токен Kodik. Добавь его на странице
+        <a href="settings.html">Настройки</a> — это займёт минуту, токен выдают бесплатно.
+      </div>`;
+    return;
+  }
+
+  let anime, sources;
+  try{
+    [anime, sources] = await Promise.all([ Shiki.byId(id), Kodik.findByShikimoriId(id) ]);
+  }catch(e){
+    content.innerHTML = `<div class="notice">Не удалось получить данные. Проверь токен Kodik в настройках и подключение к сети.</div>`;
+    console.error(e);
+    return;
+  }
+
+  if(!sources.length){
+    content.innerHTML = `
+      <h1 class="detail-title" style="margin-top:32px;">${escapeHtml(anime.russian || anime.name)}</h1>
+      <div class="notice">По этому тайтлу источников на Kodik не нашлось.</div>`;
+    return;
+  }
+
+  const result = sources[0];
+  const episodesTotal = anime.episodes || anime.episodes_aired || 1;
+  const embed = Kodik.embedUrl(result, ep);
+
+  let pills = '';
+  for(let n=1; n<=episodesTotal; n++){
+    pills += `<span class="ep-pill ${n===ep?'active':''}" data-ep="${n}">${n}</span>`;
+  }
+
+  content.innerHTML = `
+    <div class="eyebrow" style="margin-top:32px;">${escapeHtml(anime.russian || anime.name)} · серия ${ep}</div>
+    <div class="player-shell">
+      <iframe id="playerFrame" src="${embed}" allow="autoplay; fullscreen" allowfullscreen></iframe>
+    </div>
+    <div class="player-bar">
+      <div class="ep-switcher" id="epSwitcher">${pills}</div>
+      <a class="btn btn-ghost" href="anime.html?id=${anime.id}">К описанию</a>
+    </div>
+  `;
+
+  Library.markWatched(anime.id, ep, { russian: anime.russian, name: anime.name, image: anime.image });
+
+  document.getElementById('epSwitcher').addEventListener('click', e=>{
+    const pill = e.target.closest('.ep-pill');
+    if(!pill) return;
+    ep = parseInt(pill.dataset.ep, 10);
+    setEpisodeParam(ep);
+    document.getElementById('playerFrame').src = Kodik.embedUrl(result, ep);
+    document.querySelectorAll('.ep-pill').forEach(p=>p.classList.toggle('active', p===pill));
+    document.querySelector('.eyebrow').textContent = `${anime.russian || anime.name} · серия ${ep}`;
+    Library.markWatched(anime.id, ep, { russian: anime.russian, name: anime.name, image: anime.image });
+  });
+}
+main();
+</script>
+</body>
+</html>

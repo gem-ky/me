@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Каталог — СЕАНС</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F0B14">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">СЕАНС<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="index.html" data-page="home">Главная</a>
+      <a href="search.html" data-page="search">Каталог</a>
+      <a href="profile.html" data-page="profile">Моё</a>
+      <a href="settings.html" data-page="settings">Настройки</a>
+    </div>
+    <div class="navsearch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="navSearchInput" type="text" placeholder="Найти аниме…">
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="section" style="margin-top:36px">
+    <h1 class="section-title" id="pageTitle">Каталог</h1>
+
+    <div class="filterbar" id="kindChips">
+      <span class="chip active" data-kind="">Все типы</span>
+      <span class="chip" data-kind="tv">ТВ-сериал</span>
+      <span class="chip" data-kind="movie">Фильм</span>
+      <span class="chip" data-kind="ova">OVA</span>
+      <span class="chip" data-kind="ona">ONA</span>
+    </div>
+    <div class="filterbar" id="statusChips">
+      <span class="chip active" data-status="">Любой статус</span>
+      <span class="chip" data-status="ongoing">Онгоинг</span>
+      <span class="chip" data-status="released">Вышло</span>
+      <span class="chip" data-status="anons">Анонс</span>
+    </div>
+    <div class="filterbar" id="orderChips">
+      <span class="chip active" data-order="popularity">По популярности</span>
+      <span class="chip" data-order="ranked">По рейтингу</span>
+      <span class="chip" data-order="aired_on">По дате выхода</span>
+      <span class="chip" data-order="name">По алфавиту</span>
+    </div>
+
+    <div class="grid" id="grid"><div class="notice">Загрузка…</div></div>
+
+    <div style="display:flex; justify-content:center; margin-top:32px;">
+      <button class="btn btn-ghost" id="loadMore">Показать ещё</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span>СЕАНС · данные — Shikimori</span>
+  </footer>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+initNav('search');
+
+let state = {
+  search: qs('q') || '',
+  kind: '',
+  status: qs('status') || '',
+  order: qs('order') || 'popularity',
+  page: 1
+};
+let results = [];
+
+document.getElementById('navSearchInput').value = state.search;
+document.getElementById('pageTitle').textContent = state.search ? `Поиск: «${state.search}»` : 'Каталог';
+
+function syncChips(){
+  document.querySelectorAll('#kindChips .chip').forEach(c=>c.classList.toggle('active', c.dataset.kind === state.kind));
+  document.querySelectorAll('#statusChips .chip').forEach(c=>c.classList.toggle('active', c.dataset.status === state.status));
+  document.querySelectorAll('#orderChips .chip').forEach(c=>c.classList.toggle('active', c.dataset.order === state.order));
+}
+
+async function load(reset){
+  if(reset){ state.page = 1; results = []; }
+  const grid = document.getElementById('grid');
+  if(reset) grid.innerHTML = `<div class="notice">Загрузка…</div>`;
+  try{
+    const batch = await Shiki.list({
+      search: state.search, kind: state.kind, status: state.status,
+      order: state.order, page: state.page, limit: 24
+    });
+    results = reset ? batch : results.concat(batch);
+    renderGrid(grid, results);
+    document.getElementById('loadMore').style.display = batch.length < 24 ? 'none' : 'inline-flex';
+  }catch(e){
+    grid.innerHTML = `<div class="notice">Не удалось загрузить каталог с Shikimori. Попробуй ещё раз чуть позже.</div>`;
+    console.error(e);
+  }
+}
+
+document.querySelectorAll('.chip[data-kind]').forEach(c => c.onclick = () => { state.kind = c.dataset.kind; syncChips(); load(true); });
+document.querySelectorAll('.chip[data-status]').forEach(c => c.onclick = () => { state.status = c.dataset.status; syncChips(); load(true); });
+document.querySelectorAll('.chip[data-order]').forEach(c => c.onclick = () => { state.order = c.dataset.order; syncChips(); load(true); });
+document.getElementById('loadMore').onclick = () => { state.page++; load(false); };
+
+const debouncedSearch = debounce(v => {
+  state.search = v;
+  document.getElementById('pageTitle').textContent = v ? `Поиск: «${v}»` : 'Каталог';
+  load(true);
+}, 400);
+document.getElementById('navSearchInput').addEventListener('input', e => debouncedSearch(e.target.value.trim()));
+
+syncChips();
+load(true);
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СЕАНС — смотри аниме</title>
+<meta name="description" content="Личный сайт для просмотра аниме: каталог по данным Shikimori, плеер на базе Kodik.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F0B14">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">СЕАНС<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="index.html" data-page="home">Главная</a>
+      <a href="search.html" data-page="search">Каталог</a>
+      <a href="profile.html" data-page="profile">Моё</a>
+      <a href="settings.html" data-page="settings">Настройки</a>
+    </div>
+    <div class="navsearch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="navSearchInput" type="text" placeholder="Найти аниме…">
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <section class="hero" id="hero">
+    <div class="hero-art" id="heroArt"></div>
+    <div class="hero-body">
+      <div class="eyebrow">Сейчас в эфире</div>
+      <h1 class="hero-title" id="heroTitle">Загрузка…</h1>
+      <p class="hero-desc" id="heroDesc"></p>
+      <div class="hero-meta" id="heroMeta"></div>
+      <a class="btn btn-primary" id="heroLink" href="#">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Смотреть
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Сейчас в эфире</h2>
+      <a class="section-link" href="search.html?status=ongoing">Все онгоинги →</a>
+    </div>
+    <div class="strip" id="stripOngoing"><div class="notice">Загрузка…</div></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Популярное</h2>
+      <a class="section-link" href="search.html?order=popularity">Весь каталог →</a>
+    </div>
+    <div class="strip" id="stripPopular"><div class="notice">Загрузка…</div></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Топ по рейтингу</h2>
+      <a class="section-link" href="search.html?order=ranked">Все →</a>
+    </div>
+    <div class="strip" id="stripRanked"><div class="notice">Загрузка…</div></div>
+  </section>
+
+  <footer class="footer">
+    <span>СЕАНС · личный проект, данные — Shikimori, видео — Kodik</span>
+    <span>сделано на замену Tunime</span>
+  </footer>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+initNav('home');
+
+(async function(){
+  try{
+    const [ongoing, popular, ranked] = await Promise.all([
+      Shiki.list({ status:'ongoing', order:'popularity', limit:14 }),
+      Shiki.list({ order:'popularity', limit:14 }),
+      Shiki.list({ order:'ranked', limit:14 }),
+    ]);
+
+    renderStrip(document.getElementById('stripOngoing'), ongoing);
+    renderStrip(document.getElementById('stripPopular'), popular);
+    renderStrip(document.getElementById('stripRanked'), ranked);
+
+    const feature = ongoing[0] || popular[0];
+    if(feature){
+      document.getElementById('heroArt').style.backgroundImage = `url(${Shiki.poster(feature)})`;
+      document.getElementById('heroTitle').textContent = feature.russian || feature.name;
+      const desc = (feature.description || '').replace(/\[.*?\]/g,'').slice(0,220);
+      document.getElementById('heroDesc').textContent = desc ? desc + '…' : 'Описание пока не переведено.';
+      document.getElementById('heroMeta').innerHTML = [
+        kindLabel(feature.kind), statusLabel(feature.status),
+        feature.episodes ? `${feature.episodes} эп.` : '', feature.aired_on ? feature.aired_on.slice(0,4) : ''
+      ].filter(Boolean).map(m=>`<span>${escapeHtml(m)}</span>`).join('');
+      document.getElementById('heroLink').href = `anime.html?id=${feature.id}`;
+    }
+  }catch(e){
+    document.getElementById('stripOngoing').innerHTML =
+      `<div class="notice">Не удалось загрузить каталог с Shikimori. Проверь подключение к интернету и попробуй обновить страницу.</div>`;
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>

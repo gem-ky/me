@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Настройки — СЕАНС</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F0B14">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">СЕАНС<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="index.html" data-page="home">Главная</a>
+      <a href="search.html" data-page="search">Каталог</a>
+      <a href="profile.html" data-page="profile">Моё</a>
+      <a href="settings.html" data-page="settings">Настройки</a>
+    </div>
+    <div class="navsearch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="navSearchInput" type="text" placeholder="Найти аниме…">
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="section" style="margin-top:36px; max-width:560px;">
+    <h1 class="section-title" style="margin-bottom:22px;">Настройки</h1>
+
+    <div class="form-row">
+      <label for="kodikToken">API-токен Kodik</label>
+      <input type="text" id="kodikToken" placeholder="вставь токен сюда">
+      <div class="form-hint">
+        Токен нужен, чтобы плеер мог находить видео. Получить его можно бесплатно,
+        написав в поддержку Kodik через форму на их сайте — обычно отвечают в течение дня.
+        Токен хранится только в этом браузере и никуда не отправляется, кроме запросов к kodikapi.com.
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <button class="btn btn-primary" id="saveBtn">Сохранить</button>
+      <button class="btn btn-ghost" id="clearBtn">Удалить токен</button>
+    </div>
+
+    <div class="notice" id="status" style="display:none; margin-top:26px;"></div>
+
+    <div class="notice" style="margin-top:40px;">
+      <strong style="color:var(--text)">Про очистку данных.</strong><br>
+      Избранное и история просмотра хранятся в localStorage этого браузера
+      (страница «Моё»). Очистка данных сайта в браузере удалит их безвозвратно.
+    </div>
+  </section>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+initNav('settings');
+
+const input = document.getElementById('kodikToken');
+const status = document.getElementById('status');
+input.value = kodikToken();
+
+function showStatus(msg){
+  status.style.display = 'block';
+  status.textContent = msg;
+}
+
+document.getElementById('saveBtn').onclick = () => {
+  if(!input.value.trim()){ showStatus('Введи токен перед сохранением.'); return; }
+  Kodik.setToken(input.value);
+  showStatus('Токен сохранён. Теперь можно смотреть на странице любого тайтла.');
+};
+
+document.getElementById('clearBtn').onclick = () => {
+  Kodik.clearToken();
+  input.value = '';
+  showStatus('Токен удалён.');
+};
+</script>
+</body>
+</html>

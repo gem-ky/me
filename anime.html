@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СЕАНС</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F0B14">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">СЕАНС<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="index.html" data-page="home">Главная</a>
+      <a href="search.html" data-page="search">Каталог</a>
+      <a href="profile.html" data-page="profile">Моё</a>
+      <a href="settings.html" data-page="settings">Настройки</a>
+    </div>
+    <div class="navsearch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="navSearchInput" type="text" placeholder="Найти аниме…">
+    </div>
+  </div>
+</nav>
+
+<main class="wrap" id="content">
+  <div class="notice" style="margin-top:36px;">Загрузка…</div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+initNav('search');
+
+const id = qs('id');
+const content = document.getElementById('content');
+
+async function render(){
+  if(!id){ content.innerHTML = `<div class="notice">Тайтл не указан.</div>`; return; }
+  try{
+    const a = await Shiki.byId(id);
+    document.title = (a.russian || a.name) + ' — СЕАНС';
+
+    const watched = Library.watchedEpisode(a.id);
+    const isFav = Library.isFavorite(a.id);
+    const episodesTotal = a.episodes || a.episodes_aired || 1;
+
+    let epStubs = '';
+    for(let n=1; n<=episodesTotal; n++){
+      epStubs += `
+        <a class="ep-stub ${n<=watched?'watched':''}" href="watch.html?id=${a.id}&ep=${n}">
+          <div class="ep-num">серия</div>
+          <div class="ep-n">${n}</div>
+        </a>`;
+    }
+
+    content.innerHTML = `
+      <div class="detail">
+        <div class="detail-poster"><img src="${Shiki.poster(a)}" alt=""></div>
+        <div class="detail-info">
+          <h1 class="detail-title">${escapeHtml(a.russian || a.name)}</h1>
+          ${a.russian ? `<div class="detail-title-orig">${escapeHtml(a.name)}</div>` : ''}
+          <div class="detail-tags">
+            <span>${escapeHtml(kindLabel(a.kind))}</span>
+            <span>${escapeHtml(statusLabel(a.status))}</span>
+            ${a.score && a.score !== '0' ? `<span>★ ${a.score}</span>` : ''}
+            ${a.aired_on ? `<span>${a.aired_on.slice(0,4)}</span>` : ''}
+            ${episodesTotal ? `<span>${episodesTotal} эп.</span>` : ''}
+            ${(a.genres||[]).slice(0,4).map(g=>`<span>${escapeHtml(g.russian||g.name)}</span>`).join('')}
+          </div>
+          <p class="detail-desc">${escapeHtml((a.description||'Описание пока не переведено.').replace(/\[.*?\]/g,''))}</p>
+          <div class="detail-actions">
+            <a class="btn btn-primary" href="watch.html?id=${a.id}&ep=${watched > 0 ? watched : 1}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              ${watched > 0 ? `Продолжить · серия ${watched}` : 'Смотреть'}
+            </a>
+            <button class="btn btn-ghost" id="favBtn">${isFav ? '★ В избранном' : '☆ В избранное'}</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="section">
+        <div class="section-head"><h2 class="section-title">Серии</h2></div>
+        <div class="episodes">${epStubs}</div>
+      </section>
+    `;
+
+    document.getElementById('favBtn').onclick = () => {
+      const now = Library.toggleFavorite(a);
+      document.getElementById('favBtn').textContent = now ? '★ В избранном' : '☆ В избранное';
+    };
+  }catch(e){
+    content.innerHTML = `<div class="notice">Не удалось загрузить данные тайтла с Shikimori.</div>`;
+    console.error(e);
+  }
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Моё — СЕАНС</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F0B14">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap">
+    <a class="brand" href="index.html">СЕАНС<span class="dot">.</span></a>
+    <div class="navlinks">
+      <a href="index.html" data-page="home">Главная</a>
+      <a href="search.html" data-page="search">Каталог</a>
+      <a href="profile.html" data-page="profile">Моё</a>
+      <a href="settings.html" data-page="settings">Настройки</a>
+    </div>
+    <div class="navsearch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="navSearchInput" type="text" placeholder="Найти аниме…">
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="section" style="margin-top:36px;">
+    <div class="section-head"><h1 class="section-title">Продолжить просмотр</h1></div>
+    <div class="strip" id="stripHistory"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2 class="section-title">Избранное</h2></div>
+    <div class="grid" id="gridFavorites"></div>
+  </section>
+
+  <footer class="footer"><span>СЕАНС · хранится только в этом браузере</span></footer>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+initNav('profile');
+
+const history = Library.history();
+const historyEl = document.getElementById('stripHistory');
+if(history.length){
+  historyEl.innerHTML = history.map(h => `
+    <a class="card" href="watch.html?id=${h.id}&ep=${h.episode}">
+      <div class="card-poster"><img src="${h.meta && h.meta.image ? Shiki.poster(h.meta) : ''}" alt=""></div>
+      <div class="card-title">${escapeHtml(h.meta ? (h.meta.russian || h.meta.name) : 'Тайтл #'+h.id)}</div>
+      <div class="card-sub">серия ${h.episode}</div>
+    </a>`).join('');
+}else{
+  historyEl.innerHTML = `<div class="notice">Пока ничего не смотрели — начни с <a href="search.html">каталога</a>.</div>`;
+}
+
+const favs = Library.favorites();
+const favEl = document.getElementById('gridFavorites');
+if(favs.length){
+  renderGrid(favEl, favs);
+}else{
+  favEl.innerHTML = `<div class="notice">Список избранного пуст. Добавляй тайтлы кнопкой «В избранное» на странице аниме.</div>`;
+}
+</script>
+</body>
+</html>
